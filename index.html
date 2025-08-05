@@ -1,0 +1,39 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ESP32 RGB & Motor Control</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="container">
+    <h1>ESP32 Control Panel</h1>
+    
+    <section class="motor-control">
+      <h2>Motor Speed</h2>
+      <input type="range" id="motorSpeed" min="0" max="100" value="0" oninput="updateMotorSpeed(this.value)"/>
+      <span id="motorSpeedValue">0</span>
+    </section>
+
+    <section class="led-control">
+      <h2>RGB LED Control</h2>
+      <div class="toggle-group">
+        <label><input type="radio" name="mode" value="color" checked onchange="switchMode(this.value)"> Color Mode</label>
+        <label><input type="radio" name="mode" value="blink" onchange="switchMode(this.value)"> Blink Mode</label>
+      </div>
+      <div id="colorControls">
+        <label for="colorPicker">Choose Color:</label>
+        <input type="color" id="colorPicker" value="#ff0000" onchange="setColor(this.value)"/>
+      </div>
+      <div id="blinkControls" class="hidden">
+        <label for="blinkSpeed">Blink Speed:</label>
+        <input type="range" id="blinkSpeed" min="100" max="2000" step="100" value="500" oninput="setBlinkSpeed(this.value)"/>
+        <span id="blinkSpeedValue">500ms</span>
+      </div>
+    </section>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
