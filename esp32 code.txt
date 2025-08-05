@@ -1,0 +1,97 @@
+#include <WiFi.h>
+#include <WebServer.h>
+#include <SPIFFS.h>
+
+#define MOTOR_PIN 5
+#define RED_PIN   14
+#define GREEN_PIN 12
+#define BLUE_PIN  13
+
+WebServer server(80);
+
+bool blinkState = false;
+int blinkSpeed = 1000;
+unsigned long lastBlink = 0;
+bool ledOn = true;
+char currentColor = 'r';
+
+const char* ssid = "YourWiFiName";
+const char* password = "YourWiFiPassword";
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(MOTOR_PIN, OUTPUT);
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
+  pinMode(BLUE_PIN, OUTPUT);
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) delay(500);
+
+  Serial.println(WiFi.localIP());
+
+  if (!SPIFFS.begin()) {
+    Serial.println("SPIFFS Mount Failed");
+    return;
+  }
+
+  server.on("/", HTTP_GET, []() {
+    File file = SPIFFS.open("/index.html", "r");
+    server.streamFile(file, "text/html");
+    file.close();
+  });
+
+  server.on("/motor", HTTP_GET, []() {
+    int speed = server.arg("speed").toInt();
+    analogWrite(MOTOR_PIN, speed);
+    server.send(200, "text/plain", "OK");
+  });
+
+  server.on("/ledcolor", HTTP_GET, []() {
+    currentColor = server.arg("c")[0];
+    setColor(currentColor);
+    server.send(200, "text/plain", "OK");
+  });
+
+  server.on("/ledblink", HTTP_GET, []() {
+    blinkState = (server.arg("state") == "on");
+    server.send(200, "text/plain", "Blink " + String(blinkState ? "enabled" : "disabled"));
+  });
+
+  server.on("/blinkSpeed", HTTP_GET, []() {
+    blinkSpeed = server.arg("speed").toInt();
+    server.send(200, "text/plain", "Blink speed set");
+  });
+
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+
+  if (blinkState) {
+    if (millis() - lastBlink >= blinkSpeed) {
+      ledOn = !ledOn;
+      if (ledOn) setColor(currentColor);
+      else setColor('x');
+      lastBlink = millis();
+    }
+  }
+}
+
+void setColor(char c) {
+  // Turn off all first
+  analogWrite(RED_PIN, 255);
+  analogWrite(GREEN_PIN, 255);
+  analogWrite(BLUE_PIN, 255);
+
+  if (c == 'r') analogWrite(RED_PIN, 0);
+  else if (c == 'g') analogWrite(GREEN_PIN, 0);
+  else if (c == 'b') analogWrite(BLUE_PIN, 0);
+  else if (c == 'x') {
+    // All off (used in blinking)
+    analogWrite(RED_PIN, 255);
+    analogWrite(GREEN_PIN, 255);
+    analogWrite(BLUE_PIN, 255);
+  }
+}
